@@ -1,5 +1,5 @@
 import PrimaryButton from '@/Components/PrimaryButton';
-import GuestLayout from '@/Layouts/GuestLayout';
+// import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function VerifyEmail({ status }) {
@@ -12,8 +12,9 @@ export default function VerifyEmail({ status }) {
     };
 
     return (
-        <GuestLayout>
-            <Head title="Email Verification" />
+        <div>
+        {/* <GuestLayout> */}
+            {/* <Head title="Email Verification" />
 
             <div className="mb-4 text-sm text-gray-600">
                 Thanks for signing up! Before getting started, could you verify
@@ -44,7 +45,8 @@ export default function VerifyEmail({ status }) {
                         Log Out
                     </Link>
                 </div>
-            </form>
-        </GuestLayout>
+            </form> */}
+        {/* </GuestLayout> */}
+         </div>
     );
 }
