@@ -3,42 +3,15 @@
 use Osiset\ShopifyApp\Util;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use Inertia\Inertia;
 
-// if (!config('shopify-app.appbridge_enabled')) {
-//     Route::match(
-//         ['GET', 'POST'],
-//         '/authenticate',
-//         AuthenticatedSessionController::class . '@authenticate'
-//     )
-//         ->name('authenticate');
-//     Route::get(
-//         '/authenticate/token',
-//         AuthenticatedSessionController::class . '@authenticate'
-//     )
-//         ->middleware(['verify.shopify'])
-//         ->name(Util::getShopifyConfig('route_names.authenticate.token'));
-// }
-
-// Route::group(['middleware' => [ 'verify.shopify','verify.embedded',]], function () {
-//  Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-//     Route::get('/', function () {
-//         return null;
-//     })->name('home');
-
-// });
 Route::group(['middleware' => ['verify.embedded', 'verify.shopify']], function () {
 
     Route::get('/', [DashboardController::class, 'index'])->name('home');
-    Route::get('/search', [DashboardController::class, 'orderSeacrhfilter'])->name('search');
+    Route::get('/product-issues', fn () => Inertia::render('Embedded/ProductIssues'))->name('product.issues');
+    Route::get('/validation-settings', fn () => Inertia::render('Embedded/ValidationSettings'))->name('validation.settings');
+    Route::get('/logs', fn () => Inertia::render('Embedded/Logs'))->name('logs');
 
 });
-
-// Route::middleware(['auth'])->group(function () {
-
-
-//     Route::get('/search', [DashboardController::class, 'orderSeacrhfilter'])->name('search');
-
-// });
 
 require __DIR__ . '/auth.php';

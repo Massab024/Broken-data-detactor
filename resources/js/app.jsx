@@ -9,7 +9,7 @@ import enTranslations from '@shopify/polaris/locales/en.json';
 
 
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'Broken Data Detector';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
