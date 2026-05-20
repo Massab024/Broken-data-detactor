@@ -24,17 +24,17 @@ class ProductRepository implements ProductRepositoryInterface
     }
     public function getById(int $id)
     {
-        $product = $this->model->find($id);
+        $product = $this->model->newQuery()->whereKey($id)->first();
         return $product;
     }
     public function getByShopifyId(int $id)
     {
-        $product = $this->model->where('shopify_product_id', $id)->first();
+        $product = $this->model->newQuery()->where('shopify_product_id', '=', $id)->first();
         return $product;
     }
     public function getByUserId(int $id)
     {
-        $products = $this->model->where('user_id', $id)->get();
+        $products = $this->model->newQuery()->where('user_id', '=', $id)->get();
         return $products;
     }
     public function updateOrCreate(array $data)
@@ -45,7 +45,13 @@ class ProductRepository implements ProductRepositoryInterface
         $medias = $data['media'];
         unset($data['media']);
 
-        $product = $this->model->updateOrCreate($data);
+        $product = $this->model->updateOrCreate(
+            [
+                'user_id' => $data['user_id'],
+                'shopify_product_id' => $data['shopify_product_id'],
+            ],
+            $data
+        );
 
         foreach ($varients as $varient) {
             $varient['product_id'] = $product->id;
@@ -70,7 +76,7 @@ class ProductRepository implements ProductRepositoryInterface
         foreach ($medias as $media) {
             $this->productMedia->delete($media->id);
         }
-        $product->delete();
+        $this->model->newQuery()->whereKey($product->id)->delete();
     }
 }
 

@@ -17,28 +17,33 @@ class ProductVarientRepository implements ProductVarientRepositoryInterface
     }
     public function getById(int $id)
     {
-        $variant = $this->model->find($id);
+        $variant = $this->model->newQuery()->whereKey($id)->first();
         return $variant;
     }
     public function getByShopifyId(int $id)
     {
-        $variant = $this->model->where('shopify_product_Varient_id', $id)->first();
+        $variant = $this->model->newQuery()->where('shopify_product_Varient_id', '=', $id)->first();
         return $variant;
     }
     public function getByProductId(int $id)
     {
-        $variants = $this->model->where('product_id', $id)->get();
+        $variants = $this->model->newQuery()->where('product_id', '=', $id)->get();
         return $variants;
     }
     public function updateOrCreate(array $data)
     {
-        $productVarient = $this->model->updateOrCreate($data);
+        $productVarient = $this->model->updateOrCreate(
+            [
+                'product_id' => $data['product_id'],
+                'shopify_product_Varient_id' => $data['shopify_product_Varient_id'],
+            ],
+            $data
+        );
         return $productVarient;
     }
     public function delete(int $id)
     {
-        $varient = $this->getById($id);
-        $varient->delete();
+        $this->model->newQuery()->whereKey($id)->delete();
     }
 }
 

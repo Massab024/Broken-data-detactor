@@ -1,9 +1,9 @@
 <?php
 
 namespace App\Http\Traits;
-use Log;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Repositories\Product\ProductRepositoryInterface;
 
 
@@ -137,6 +137,13 @@ trait ShopifyProductTrait
     }
     public function formatProductdata($product, $user)
     {
+        $variantPrices = [];
+        foreach ($product->variants as $variant) {
+            if (isset($variant->price)) {
+                $variantPrices[] = (float) $variant->price;
+            }
+        }
+
         $formatdProduct = [
             'user_id' => $user->id,
             'shopify_product_id' => $product->id,
@@ -147,6 +154,15 @@ trait ShopifyProductTrait
             'vendor' => $product->vendor,
             'product_type' => $product->product_type,
             'status' => $product->status,
+            'image_url' => $product->image_url ?? null,
+            'variant_count' => $product->variant_count ?? 0,
+            'has_variants' => ($product->variant_count ?? 0) > 0,
+            'min_price' => !empty($variantPrices) ? min($variantPrices) : null,
+            'max_price' => !empty($variantPrices) ? max($variantPrices) : null,
+            'health_status' => 'needs_review',
+            'last_synced_at' => now(),
+            'last_checked_at' => null,
+            'raw_data' => $product,
             'variants' => $this->formatProductvarientData($product->variants),
             'media' => $this->formatProductMedia($product->media)
         ];
@@ -158,12 +174,14 @@ trait ShopifyProductTrait
         foreach ($variants as $varient) {
             $productVarients[] = [
                 "shopify_product_Varient_id" => $varient->id,
+                'shopify_variant_id' => $varient->id,
                 'shopify_inventory_item_id' => $varient->inventory_item_id,
                 'title' => $varient->title,
                 'sku' => $varient->sku,
                 'price' => $varient->price,
                 'inventory_quantity' => $varient->inventory_quantity,
-                'compare_at_price' => $varient->compare_at_price
+                'compare_at_price' => $varient->compare_at_price,
+                'raw_data' => $varient,
             ];
         }
         return $productVarients;
@@ -198,9 +216,14 @@ trait ShopifyProductTrait
     {
         $node = $data->node;
         $productVariants = [];
+        $productMedia = [];
+        $variantPrices = [];
         if (!empty($node->variants->edges)) {
             foreach ($node->variants->edges as $edge) {
                 $variant = $edge->node;
+                if (isset($variant->price)) {
+                    $variantPrices[] = (float) $variant->price;
+                }
                 $productVariants[] = [
                     'compare_at_price' => $variant->compareAtPrice ?? null,
                     'id' => $this->extractId($variant->id),
@@ -212,7 +235,6 @@ trait ShopifyProductTrait
                 ];
             }
         }
-        $productMedia = [];
         if (!empty($node->media->edges)) {
             foreach ($node->media->edges as $index => $edge) {
                 $media = $edge->node;
@@ -236,6 +258,15 @@ trait ShopifyProductTrait
             'vendor' => $node->vendor,
             'status' => strtolower($node->status),
             'tags' => $this->arrayToString($node->tags),
+            'image_url' => $productMedia[0]['preview_image']['src'] ?? null,
+            'variant_count' => count($productVariants),
+            'has_variants' => count($productVariants) > 0,
+            'min_price' => !empty($variantPrices) ? min($variantPrices) : null,
+            'max_price' => !empty($variantPrices) ? max($variantPrices) : null,
+            'health_status' => 'needs_review',
+            'last_synced_at' => now(),
+            'last_checked_at' => null,
+            'raw_data' => $node,
             'variants' => $productVariants,
             'media' => $productMedia,
         ];

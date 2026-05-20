@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\AppActivityLog;
 use App\Models\User;
 use App\Http\Traits\ResponseTrait;
 use App\Http\Traits\ShopifyProductTrait;
@@ -13,14 +14,8 @@ class ProductSyncJob implements ShouldQueue
 {
     use Queueable, ShopifyProductTrait, ResponseTrait;
 
-    /**
-     * Create a new job instance.
-     */
-
-    protected $userId;
-    public function __construct($userId)
+    public function __construct(public int $userId)
     {
-        $this->userId = $userId;
     }
 
     /**
@@ -29,11 +24,48 @@ class ProductSyncJob implements ShouldQueue
     public function handle(): void
     {
         $this->getProductRepository(app(ProductRepositoryInterface::class));
-        $user = User::find($this->userId);
+        $user = User::query()->findOrFail($this->userId);
+
+        if (!$user) {
+            return;
+        }
+
+        $this->writeActivityLog(
+            'product_sync_started',
+            'info',
+            'Product sync started for user ID: ' . $this->userId,
+            ['user_id' => $this->userId]
+        );
+
         if ($this->getProductsFromShopify($user)) {
+            $this->writeActivityLog(
+                'product_sync_completed',
+                'info',
+                'Product sync completed for user ID: ' . $this->userId,
+                ['user_id' => $this->userId]
+            );
+
             $this->logInfo('Products Synced successfully from Shopify for user ID: ' . $this->userId);
         } else {
+            $this->writeActivityLog(
+                'product_sync_failed',
+                'error',
+                'Product sync failed for user ID: ' . $this->userId,
+                ['user_id' => $this->userId]
+            );
+
             $this->logInfo('Products Synced failed from Shopify for user ID: ' . $this->userId);
         }
+    }
+
+    protected function writeActivityLog(string $event, string $level, string $message, array $details = []): void
+    {
+        AppActivityLog::create([
+            'user_id' => $this->userId,
+            'event' => $event,
+            'level' => $level,
+            'message' => $message,
+            'details' => $details,
+        ]);
     }
 }

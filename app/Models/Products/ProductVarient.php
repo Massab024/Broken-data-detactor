@@ -10,6 +10,7 @@ class ProductVarient extends Model
 {
     protected $fillable = [
         'shopify_product_Varient_id',
+        'shopify_variant_id',
         'product_id',
         'sku',
         'price',
@@ -17,6 +18,11 @@ class ProductVarient extends Model
         'shopify_inventory_item_id',
         'compare_at_price',
         'inventory_quantity',
+        'raw_data',
+    ];
+
+    protected $casts = [
+        'raw_data' => 'array',
     ];
 
     public function product(){

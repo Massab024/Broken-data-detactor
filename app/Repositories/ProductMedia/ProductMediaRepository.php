@@ -19,28 +19,33 @@ class ProductMediaRepository implements ProductMediaRepositoryInterface
     }
     public function getById(int $id)
     {
-        $media = $this->model->find($id);
+        $media = $this->model->newQuery()->whereKey($id)->first();
         return $media;
     }
     public function getByShopifyId(int $id)
     {
-        $media = $this->model->where('shopify_product_media_id', $id)->first();
+        $media = $this->model->newQuery()->where('shopify_product_media_id', '=', $id)->first();
         return $media;
     }
     public function getByProductId(int $id)
     {
-        $media = $this->model->where('product_id', $id)->get();
+        $media = $this->model->newQuery()->where('product_id', '=', $id)->get();
         return $media;
     }
     public function updateOrCreate(array $data)
     {
-        $media = $this->model->updateOrCreate($data);
+        $media = $this->model->updateOrCreate(
+            [
+                'product_id' => $data['product_id'],
+                'shopify_product_media_id' => $data['shopify_product_media_id'],
+            ],
+            $data
+        );
         return $media;
     }
     public function delete(int $id)
     {
-        $media = $this->getById($id);
-        $media->delete();
+        $this->model->newQuery()->whereKey($id)->delete();
     }
 }
 

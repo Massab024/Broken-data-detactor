@@ -384,7 +384,7 @@ return [
     |
     */
 
-    'webhooks' => [
+    'webhooks' => array_values(array_filter([
         [
             'topic' => env('SHOPIFY_WEBHOOK_1_TOPIC'),
             'address' => env('SHOPIFY_WEBHOOK_1_ADDRESS')
@@ -401,19 +401,21 @@ return [
             'topic' => env('SHOPIFY_WEBHOOK_4_TOPIC'),
             'address' => env('SHOPIFY_WEBHOOK_4_ADDRESS')
         ],
-                [
+        [
             'topic' => env('SHOPIFY_WEBHOOK_5_TOPIC'),
             'address' => env('SHOPIFY_WEBHOOK_5_ADDRESS')
         ],
-                [
+        [
             'topic' => env('SHOPIFY_WEBHOOK_6_TOPIC'),
             'address' => env('SHOPIFY_WEBHOOK_6_ADDRESS')
         ],
-                [
+        [
             'topic' => env('SHOPIFY_WEBHOOK_7_TOPIC'),
             'address' => env('SHOPIFY_WEBHOOK_7_ADDRESS')
         ],
-    ],
+    ], function ($w) {
+        return !empty($w['topic']) && !empty($w['address']);
+    })),
 
     /*
     |--------------------------------------------------------------------------
