@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import {
     Badge,
     BlockStack,
@@ -50,11 +50,12 @@ export default function ProductIssueShow({
     validation_rule,
     shopify_admin_url,
 }) {
+    const { query } = usePage().props.ziggy;
     const [rechecking, setRechecking] = useState(false);
 
     const handleRecheck = () => {
         setRechecking(true);
-        router.post(route('products.validate.single', { product: product.id }), {}, {
+        router.post(route('products.validate.single', { product: product.id, ...query }), {}, {
             preserveScroll: true,
             onFinish: () => setRechecking(false),
         });
@@ -63,7 +64,7 @@ export default function ProductIssueShow({
     return (
         <Page
             title="Product Issue Details"
-            backAction={{ content: 'Back to Product Issues', url: route('product.issues') }}
+            backAction={{ content: 'Back to Product Issues', url: route('product.issues', query) }}
         >
             <BlockStack gap="500">
                 <Card sectioned>
@@ -155,7 +156,7 @@ export default function ProductIssueShow({
                             <Button variant="primary" onClick={handleRecheck} loading={rechecking}>
                                 Recheck Product
                             </Button>
-                            <Link href={route('product.issues')}>
+                            <Link href={route('product.issues', query)}>
                                 <Button variant="plain">Back to Product Issues</Button>
                             </Link>
                         </InlineStack>

@@ -1,4 +1,4 @@
-﻿import { Link, router } from '@inertiajs/react';
+﻿import { Link, router, usePage } from '@inertiajs/react';
 import {
     Badge,
     BlockStack,
@@ -46,6 +46,7 @@ export default function ProductIssues({
     const [status, setStatus] = useState(filters.status || 'all');
     const [issueKey, setIssueKey] = useState(filters.issue_key || 'all');
     const [healthStatus, setHealthStatus] = useState(filters.health_status || 'all');
+    const { query: ziggyQuery } = usePage().props.ziggy;
 
     useEffect(() => {
         setSearch(filters.search || '');
@@ -85,7 +86,7 @@ export default function ProductIssues({
 
     const currentPage = Number(issues?.current_page || 1);
     const lastPage = Number(issues?.last_page || 1);
-    const query = {
+    const filterQuery = {
         search,
         severity,
         status,
@@ -94,7 +95,7 @@ export default function ProductIssues({
     };
 
     const navigatePage = (page) => {
-        router.get(route('product.issues'), { ...query, page }, {
+        router.get(route('product.issues'), { ...filterQuery, page }, {
             preserveScroll: true,
             preserveState: true,
             replace: true,
@@ -239,7 +240,7 @@ export default function ProductIssues({
                                         <IndexTable.Cell>{issue.detected_at}</IndexTable.Cell>
                                         <IndexTable.Cell>{issue.last_checked_at || 'n/a'}</IndexTable.Cell>
                                         <IndexTable.Cell>
-                                            <Link href={route('product.issues.show', { productIssue: issue.id })}>
+                                            <Link href={route('product.issues.show', { productIssue: issue.id, ...ziggyQuery })}>
                                                 <Button variant="plain">View Details</Button>
                                             </Link>
                                         </IndexTable.Cell>

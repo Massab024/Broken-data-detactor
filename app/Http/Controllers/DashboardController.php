@@ -20,7 +20,7 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        return $this->render('Dashboard', $this->dashboardData());
+        return $this->render('Dashboard', $this->dashboardData($request->query()));
     }
 
     public function syncProducts(Request $request)
@@ -49,7 +49,7 @@ class DashboardController extends Controller
         return back()->with('success', 'Product validation has been queued.');
     }
 
-    protected function dashboardData(): array
+    protected function dashboardData(array $query = []): array
     {
         $products = Product::query()->get();
 
@@ -81,7 +81,7 @@ class DashboardController extends Controller
                 'severity' => $issue->severity,
                 'status' => $issue->resolved_at ? 'resolved' : 'open',
                 'detected_at' => optional($issue->created_at)?->toDateTimeString(),
-                'view_url' => route('product.issues.show', ['productIssue' => $issue->id]),
+                'view_url' => route('product.issues.show', array_merge(['productIssue' => $issue->id], $query)),
             ])
             ->values();
 
