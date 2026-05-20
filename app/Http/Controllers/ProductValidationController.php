@@ -22,6 +22,6 @@ class ProductValidationController extends Controller
 
         $result = $validationService->validateProduct($product, $request->user()->id);
 
-        return $this->sendResponse($result, 'Product validation completed');
+        return back()->with('success', 'Product validation completed');
     }
 }

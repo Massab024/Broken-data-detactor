@@ -239,7 +239,7 @@ export default function ProductIssues({
                                         <IndexTable.Cell>{issue.detected_at}</IndexTable.Cell>
                                         <IndexTable.Cell>{issue.last_checked_at || 'n/a'}</IndexTable.Cell>
                                         <IndexTable.Cell>
-                                            <Link href={route('product.issues', { ...query, issue_id: issue.id })}>
+                                            <Link href={route('product.issues.show', { productIssue: issue.id })}>
                                                 <Button variant="plain">View Details</Button>
                                             </Link>
                                         </IndexTable.Cell>

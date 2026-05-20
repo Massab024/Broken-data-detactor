@@ -9,6 +9,7 @@ use App\Http\Traits\ShopifyProductTrait;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use App\Repositories\Product\ProductRepositoryInterface;
+use Illuminate\Support\Facades\Log;
 
 class ProductSyncJob implements ShouldQueue
 {
@@ -23,6 +24,10 @@ class ProductSyncJob implements ShouldQueue
      */
     public function handle(): void
     {
+        Log::info('ProductSyncJob started', [
+            'user_id' => $this->userId,
+        ]);
+
         $this->getProductRepository(app(ProductRepositoryInterface::class));
         $user = User::query()->findOrFail($this->userId);
 

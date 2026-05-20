@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Products\Product;
 use App\Models\Products\ProductIssue;
+use App\Models\Products\ProductVarient;
 use App\Models\ValidationRule;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class ProductIssueController extends Controller
 {
@@ -136,5 +137,107 @@ class ProductIssueController extends Controller
             ],
             'selected_issue' => $selectedIssue,
         ]);
+    }
+
+    public function show(ProductIssue $productIssue)
+    {
+        $productIssue->loadMissing(['product.user', 'product.productVarients']);
+
+        $product = $productIssue->product;
+
+        abort_unless($product instanceof Product, 404);
+
+        $allIssues = ProductIssue::query()
+            ->where('product_id', $product->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        $validationRule = ValidationRule::query()
+            ->where('rule_key', $productIssue->issue_key)
+            ->first();
+
+        return $this->render('ProductIssueShow', [
+            'product_issue' => $this->mapIssue($productIssue),
+            'product' => $this->mapProduct($product),
+            'variants' => $product->productVarients->map(fn (ProductVarient $variant) => $this->mapVariant($variant))->values(),
+            'open_issues' => $allIssues
+                ->filter(fn (ProductIssue $issue) => $issue->resolved_at === null)
+                ->map(fn (ProductIssue $issue) => $this->mapIssue($issue))
+                ->values(),
+            'resolved_issues' => $allIssues
+                ->filter(fn (ProductIssue $issue) => $issue->resolved_at !== null)
+                ->map(fn (ProductIssue $issue) => $this->mapIssue($issue))
+                ->values(),
+            'validation_rule' => $validationRule ? [
+                'rule_key' => $validationRule->rule_key,
+                'name' => $validationRule->name,
+                'description' => $validationRule->description,
+                'severity' => $validationRule->severity,
+                'is_enabled' => $validationRule->is_enabled,
+                'config' => $validationRule->config,
+            ] : null,
+            'shopify_admin_url' => $this->buildShopifyAdminProductUrl($product),
+        ]);
+    }
+
+    protected function mapIssue(ProductIssue $issue): array
+    {
+        return [
+            'id' => $issue->id,
+            'product_id' => $issue->product_id,
+            'shopify_product_id' => $issue->shopify_product_id,
+            'issue_key' => $issue->issue_key,
+            'severity' => $issue->severity,
+            'message' => $issue->message,
+            'status' => $issue->resolved_at ? 'resolved' : 'open',
+            'detected_at' => optional($issue->created_at)?->toDateTimeString(),
+            'resolved_at' => optional($issue->resolved_at)?->toDateTimeString(),
+            'metadata' => $issue->metadata,
+        ];
+    }
+
+    protected function mapProduct(Product $product): array
+    {
+        return [
+            'id' => $product->id,
+            'shopify_product_id' => $product->shopify_product_id,
+            'title' => $product->title,
+            'handle' => $product->handle,
+            'vendor' => $product->vendor,
+            'product_type' => $product->product_type,
+            'status' => $product->status,
+            'health_status' => $product->health_status,
+            'image_url' => $product->image_url,
+            'last_synced_at' => optional($product->last_synced_at)?->toDateTimeString(),
+            'last_checked_at' => optional($product->last_checked_at)?->toDateTimeString(),
+        ];
+    }
+
+    protected function mapVariant(ProductVarient $variant): array
+    {
+        return [
+            'id' => $variant->id,
+            'title' => $variant->title,
+            'sku' => $variant->sku,
+            'price' => $variant->price,
+            'inventory_quantity' => $variant->inventory_quantity,
+            'shopify_variant_id' => $variant->shopify_variant_id,
+        ];
+    }
+
+    protected function buildShopifyAdminProductUrl(Product $product): string
+    {
+        $shopDomain = (string) ($product->user?->name ?? '');
+        $shopDomain = strtolower(trim($shopDomain));
+        $shopDomain = preg_replace('/^https?:\/\//', '', $shopDomain) ?? $shopDomain;
+        $shopDomain = rtrim($shopDomain, '/');
+
+        if ($shopDomain === '') {
+            return '#';
+        }
+
+        $storeHandle = preg_replace('/\.myshopify\.com$/', '', $shopDomain) ?: $shopDomain;
+
+        return 'https://admin.shopify.com/store/' . rawurlencode($storeHandle) . '/products/' . $product->shopify_product_id;
     }
 }

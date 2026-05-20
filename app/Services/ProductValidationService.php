@@ -8,18 +8,23 @@ use App\Models\Products\ProductIssue;
 use App\Models\ValidationRule;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductValidationService
 {
-    public function validateAllProducts(?int $userId = null): array
+    public function validateForUser(int $userId): array
     {
-        $query = Product::query()->with('productVarients');
+        $rules = $this->enabledRules();
+        $products = Product::query()
+            ->where('user_id', $userId)
+            ->with('productVarients')
+            ->get();
 
-        if ($userId !== null) {
-            $query->where('user_id', $userId);
-        }
-
-        $products = $query->get();
+        Log::info('Validation scope loaded', [
+            'user_id' => $userId,
+            'enabled_rules_count' => $rules->count(),
+            'products_count' => $products->count(),
+        ]);
 
         $summary = [
             'products_checked' => 0,
@@ -29,7 +34,49 @@ class ProductValidationService
         ];
 
         foreach ($products as $product) {
-            $result = $this->validateProduct($product, $userId);
+            Log::info('Checking product', [
+                'user_id' => $userId,
+                'product_id' => $product->id,
+                'shopify_product_id' => $product->shopify_product_id,
+                'title' => $product->title,
+            ]);
+
+            $result = $this->validateProduct($product, $userId, $rules);
+
+            $summary['products_checked']++;
+            $summary['issues_detected'] += $result['issues_detected'];
+            $summary['issues_resolved'] += $result['issues_resolved'];
+            $summary['products'][] = $result;
+        }
+
+        Log::info('Validation completed', [
+            'user_id' => $userId,
+            'products_checked' => $summary['products_checked'],
+            'issues_detected' => $summary['issues_detected'],
+            'issues_resolved' => $summary['issues_resolved'],
+        ]);
+
+        return $summary;
+    }
+
+    public function validateAllProducts(?int $userId = null): array
+    {
+        if ($userId !== null) {
+            return $this->validateForUser($userId);
+        }
+
+        $rules = $this->enabledRules();
+        $products = Product::query()->with('productVarients')->get();
+
+        $summary = [
+            'products_checked' => 0,
+            'issues_detected' => 0,
+            'issues_resolved' => 0,
+            'products' => [],
+        ];
+
+        foreach ($products as $product) {
+            $result = $this->validateProduct($product, $userId, $rules);
 
             $summary['products_checked']++;
             $summary['issues_detected'] += $result['issues_detected'];
@@ -40,12 +87,12 @@ class ProductValidationService
         return $summary;
     }
 
-    public function validateProduct(Product $product, ?int $userId = null): array
+    public function validateProduct(Product $product, ?int $userId = null, ?Collection $rules = null): array
     {
-        return DB::transaction(function () use ($product, $userId) {
+        return DB::transaction(function () use ($product, $userId, $rules) {
             $product->loadMissing('productVarients');
 
-            $rules = $this->enabledRules();
+            $rules ??= $this->enabledRules();
             $openIssues = collect();
             $detectedCount = 0;
             $resolvedCount = 0;
@@ -120,6 +167,13 @@ class ProductValidationService
                     $userId
                 );
 
+                Log::info('Issue created', [
+                    'user_id' => $userId,
+                    'product_id' => $product->id,
+                    'issue_id' => $issue->id,
+                    'issue_key' => $rule->rule_key,
+                ]);
+
                 return [
                     'detected_count' => 1,
                     'resolved_count' => 0,
@@ -163,6 +217,13 @@ class ProductValidationService
                     ],
                     $userId
                 );
+
+                Log::info('Issue resolved', [
+                    'user_id' => $userId,
+                    'product_id' => $issue->product_id,
+                    'issue_id' => $issue->id,
+                    'issue_key' => $issue->issue_key,
+                ]);
             });
 
             return [

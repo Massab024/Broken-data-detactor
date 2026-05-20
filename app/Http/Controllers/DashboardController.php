@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProductValidationJob;
 use App\Jobs\ProductSyncJob;
 use App\Models\AppActivityLog;
 use App\Models\Products\Product;
@@ -9,8 +10,8 @@ use App\Models\Products\ProductIssue;
 use App\Models\ValidationRule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
 
 
 
@@ -19,25 +20,33 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $user = Auth::user();
-
-        if ($user) {
-
-            $check = Product::where('user_id', $user->id)->first();
-
-            if (empty($check)) {
-                ProductSyncJob::dispatch($user->id);
-            }
-        }
-
         return $this->render('Dashboard', $this->dashboardData());
     }
 
     public function syncProducts(Request $request)
     {
+        Log::info('Sync Products controller hit', [
+            'user_id' => $request->user()?->id,
+            'shop' => $request->user()?->name,
+        ]);
+
         ProductSyncJob::dispatch($request->user()->id);
 
         return back()->with('success', 'Product sync has been queued.');
+    }
+
+    public function validateProducts(Request $request)
+    {
+        $user = $request->user();
+
+        Log::info('Run Validation button clicked', [
+            'user_id' => $user?->id,
+            'shop' => $user?->name,
+        ]);
+
+        ProductValidationJob::dispatch($user->id);
+
+        return back()->with('success', 'Product validation has been queued.');
     }
 
     protected function dashboardData(): array
@@ -72,7 +81,7 @@ class DashboardController extends Controller
                 'severity' => $issue->severity,
                 'status' => $issue->resolved_at ? 'resolved' : 'open',
                 'detected_at' => optional($issue->created_at)?->toDateTimeString(),
-                'view_url' => route('product.issues', ['issue_id' => $issue->id]),
+                'view_url' => route('product.issues.show', ['productIssue' => $issue->id]),
             ])
             ->values();
 
@@ -94,8 +103,8 @@ class DashboardController extends Controller
             'warning_products_count' => $products->where('health_status', 'warning')->count(),
             'critical_products_count' => $products->where('health_status', 'critical')->count(),
             'needs_review_products_count' => $products->where('health_status', 'needs_review')->count(),
-            'open_issues_count' => ProductIssue::query()->open()->count(),
-            'resolved_issues_count' => ProductIssue::query()->whereNotNull('resolved_at')->count(),
+            'open_issues_count' => ProductIssue::query()->get()->whereNull('resolved_at')->count(),
+            'resolved_issues_count' => ProductIssue::query()->get()->whereNotNull('resolved_at')->count(),
             'recently_detected_issues' => $recentIssues,
             'recent_activity_logs' => $recentActivityLogs,
             'issue_count_by_severity' => $this->normalizeCounts($severityCounts, ['critical', 'high', 'medium', 'low']),

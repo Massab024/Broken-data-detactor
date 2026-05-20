@@ -10,6 +10,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class ProductValidationJob implements ShouldQueue
 {
@@ -21,6 +22,10 @@ class ProductValidationJob implements ShouldQueue
 
     public function handle(ProductValidationService $validationService): void
     {
+        Log::info('ProductValidationJob started', [
+            'user_id' => $this->userId,
+        ]);
+
         AppActivityLog::create([
             'user_id' => $this->userId,
             'event' => 'product_validation_started',
@@ -32,7 +37,7 @@ class ProductValidationJob implements ShouldQueue
         ]);
 
         try {
-            $summary = $validationService->validateAllProducts($this->userId);
+            $summary = $validationService->validateForUser($this->userId);
 
             AppActivityLog::create([
                 'user_id' => $this->userId,
@@ -47,6 +52,11 @@ class ProductValidationJob implements ShouldQueue
                 ],
             ]);
         } catch (Throwable $throwable) {
+            Log::error('ProductValidationJob failed', [
+                'user_id' => $this->userId,
+                'error' => $throwable->getMessage(),
+            ]);
+
             AppActivityLog::create([
                 'user_id' => $this->userId,
                 'event' => 'product_validation_failed',

@@ -1,4 +1,4 @@
-﻿import { router, Link } from '@inertiajs/react';
+﻿import { router, Link, usePage } from '@inertiajs/react';
 import {
     Badge,
     BlockStack,
@@ -58,22 +58,24 @@ export default function Dashboard({
     enabled_validation_rules_count,
     disabled_validation_rules_count,
 }) {
+    const page = usePage().props;
+    const { query } = page.ziggy;
     const [syncing, setSyncing] = useState(false);
-    const [validating, setValidating] = useState(false);
+    const [isValidating, setIsValidating] = useState(false);
 
     const handleSync = () => {
-        setSyncing(true);
-        router.post(route('products.sync'), {}, {
+        router.post(route('products.sync', query), {}, {
             preserveScroll: true,
+            onStart: () => setSyncing(true),
             onFinish: () => setSyncing(false),
         });
     };
 
     const handleValidate = () => {
-        setValidating(true);
-        router.post(route('products.validate'), {}, {
+        router.post(route('products.validate', query), {}, {
             preserveScroll: true,
-            onFinish: () => setValidating(false),
+            onStart: () => setIsValidating(true),
+            onFinish: () => setIsValidating(false),
         });
     };
 
@@ -123,7 +125,7 @@ export default function Dashboard({
                             <Button variant="primary" onClick={handleSync} loading={syncing}>
                                 Sync Products
                             </Button>
-                            <Button onClick={handleValidate} loading={validating}>
+                            <Button onClick={handleValidate} loading={isValidating}>
                                 Run Validation
                             </Button>
                             <Link href={route('product.issues')}>
