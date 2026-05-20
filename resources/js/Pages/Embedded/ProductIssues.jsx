@@ -47,6 +47,14 @@ export default function ProductIssues({
     const [issueKey, setIssueKey] = useState(filters.issue_key || 'all');
     const [healthStatus, setHealthStatus] = useState(filters.health_status || 'all');
     const { query: ziggyQuery } = usePage().props.ziggy;
+    const embeddedQuery = { ...(ziggyQuery || {}) };
+
+    delete embeddedQuery.search;
+    delete embeddedQuery.severity;
+    delete embeddedQuery.status;
+    delete embeddedQuery.issue_key;
+    delete embeddedQuery.health_status;
+    delete embeddedQuery.issue_id;
 
     useEffect(() => {
         setSearch(filters.search || '');
@@ -57,7 +65,7 @@ export default function ProductIssues({
     }, [filters]);
 
     const applyFilters = (page = 1) => {
-        router.get(route('product.issues'), {
+        router.get(route('product.issues', embeddedQuery), {
             search,
             severity,
             status,
@@ -77,7 +85,7 @@ export default function ProductIssues({
         setStatus('all');
         setIssueKey('all');
         setHealthStatus('all');
-        router.get(route('product.issues'), {}, {
+        router.get(route('product.issues', embeddedQuery), {}, {
             preserveScroll: true,
             preserveState: true,
             replace: true,
@@ -95,7 +103,7 @@ export default function ProductIssues({
     };
 
     const navigatePage = (page) => {
-        router.get(route('product.issues'), { ...filterQuery, page }, {
+        router.get(route('product.issues', embeddedQuery), { ...filterQuery, page }, {
             preserveScroll: true,
             preserveState: true,
             replace: true,

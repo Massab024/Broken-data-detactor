@@ -150,15 +150,15 @@ export default function ProductIssueShow({
                     <BlockStack gap="300">
                         <Text variant="headingMd" as="h2">Actions</Text>
                         <InlineStack gap="200" wrap={true}>
-                            <Button onClick={() => window.open(shopify_admin_url, '_blank', 'noopener,noreferrer')} disabled={shopify_admin_url === '#'}>
+                            <Button onClick={() => window.open(shopify_admin_url, '_blank' )} disabled={shopify_admin_url === '#'}>
                                 Open Product in Shopify
                             </Button>
                             <Button variant="primary" onClick={handleRecheck} loading={rechecking}>
                                 Recheck Product
                             </Button>
-                            <Link href={route('product.issues', query)}>
+                            {/* <Link href={route('product.issues', query)}>
                                 <Button variant="plain">Back to Product Issues</Button>
-                            </Link>
+                            </Link> */}
                         </InlineStack>
                     </BlockStack>
                 </Card>

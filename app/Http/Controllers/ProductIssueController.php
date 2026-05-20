@@ -227,7 +227,7 @@ class ProductIssueController extends Controller
 
     protected function buildShopifyAdminProductUrl(Product $product): string
     {
-        $shopDomain = (string) ($product->user?->name ?? '');
+        $shopDomain = (string) ($product->user?->getDomain()?->toNative() ?? $product->user?->name ?? '');
         $shopDomain = strtolower(trim($shopDomain));
         $shopDomain = preg_replace('/^https?:\/\//', '', $shopDomain) ?? $shopDomain;
         $shopDomain = rtrim($shopDomain, '/');
@@ -238,6 +238,6 @@ class ProductIssueController extends Controller
 
         $storeHandle = preg_replace('/\.myshopify\.com$/', '', $shopDomain) ?: $shopDomain;
 
-        return 'https://admin.shopify.com/store/' . rawurlencode($storeHandle) . '/products/' . $product->shopify_product_id;
+        return 'https://admin.shopify.com/store/' . rawurlencode($storeHandle) . '/products/' . rawurlencode((string) $product->shopify_product_id);
     }
 }
