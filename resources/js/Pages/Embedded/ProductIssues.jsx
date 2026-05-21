@@ -111,7 +111,7 @@ export default function ProductIssues({
     };
 
     return (
-        <Page title="Product Issues">
+        <Page >
             <BlockStack gap="500">
                 <Card sectioned>
                     <BlockStack gap="300">

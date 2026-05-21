@@ -16,11 +16,14 @@ class ProductValidationController extends Controller
         return $this->sendResponse([], 'Product validation has been queued.');
     }
 
-    public function validateSingleProduct(Request $request, Product $product, ProductValidationService $validationService)
+    public function validateSingleProduct(Request $request, int $product, ProductValidationService $validationService)
     {
-        abort_unless($request->user()?->id === $product->user_id, 403);
+        $resolvedProduct = Product::query()
+            ->where('id', $product)
+            ->where('user_id', $request->user()?->id)
+            ->firstOrFail();
 
-        $result = $validationService->validateProduct($product, $request->user()->id);
+        $validationService->validateProduct($resolvedProduct, $request->user()->id);
 
         return back()->with('success', 'Product validation completed');
     }

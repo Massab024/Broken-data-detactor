@@ -20,7 +20,7 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        return $this->render('Dashboard', $this->dashboardData($request->query()));
+        return $this->render('Dashboard', $this->dashboardData($request->user()?->id, $request->query()));
     }
 
     public function syncProducts(Request $request)
@@ -49,17 +49,21 @@ class DashboardController extends Controller
         return back()->with('success', 'Product validation has been queued.');
     }
 
-    protected function dashboardData(array $query = []): array
+    protected function dashboardData(?int $userId, array $query = []): array
     {
-        $products = Product::query()->get();
+        $products = Product::query()
+            ->when($userId !== null, fn ($builder) => $builder->where('user_id', $userId))
+            ->get();
 
         $healthCounts = Product::query()
+            ->when($userId !== null, fn ($builder) => $builder->where('user_id', $userId))
             ->select('health_status', DB::raw('COUNT(*) as total'))
             ->groupBy('health_status')
             ->pluck('total', 'health_status')
             ->all();
 
         $severityCounts = ProductIssue::query()
+            ->whereHas('product', fn ($productQuery) => $productQuery->when($userId !== null, fn ($builder) => $builder->where('user_id', $userId)))
             ->open()
             ->select('severity', DB::raw('COUNT(*) as total'))
             ->groupBy('severity')
@@ -68,6 +72,7 @@ class DashboardController extends Controller
 
         $recentIssues = ProductIssue::query()
             ->with(['product:id,title,health_status,last_checked_at'])
+            ->whereHas('product', fn ($productQuery) => $productQuery->when($userId !== null, fn ($builder) => $builder->where('user_id', $userId)))
             ->latest()
             ->limit(5)
             ->get()
@@ -86,6 +91,7 @@ class DashboardController extends Controller
             ->values();
 
         $recentActivityLogs = AppActivityLog::query()
+            ->when($userId !== null, fn ($builder) => $builder->where('user_id', $userId))
             ->latest()
             ->limit(5)
             ->get()
@@ -103,8 +109,14 @@ class DashboardController extends Controller
             'warning_products_count' => $products->where('health_status', 'warning')->count(),
             'critical_products_count' => $products->where('health_status', 'critical')->count(),
             'needs_review_products_count' => $products->where('health_status', 'needs_review')->count(),
-            'open_issues_count' => ProductIssue::query()->get()->whereNull('resolved_at')->count(),
-            'resolved_issues_count' => ProductIssue::query()->get()->whereNotNull('resolved_at')->count(),
+            'open_issues_count' => ProductIssue::query()
+                ->whereHas('product', fn ($productQuery) => $productQuery->when($userId !== null, fn ($builder) => $builder->where('user_id', $userId)))
+                ->whereNull('resolved_at')
+                ->count(),
+            'resolved_issues_count' => ProductIssue::query()
+                ->whereHas('product', fn ($productQuery) => $productQuery->when($userId !== null, fn ($builder) => $builder->where('user_id', $userId)))
+                ->whereNotNull('resolved_at')
+                ->count(),
             'recently_detected_issues' => $recentIssues,
             'recent_activity_logs' => $recentActivityLogs,
             'issue_count_by_severity' => $this->normalizeCounts($severityCounts, ['critical', 'high', 'medium', 'low']),

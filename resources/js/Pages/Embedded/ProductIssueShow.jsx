@@ -156,9 +156,9 @@ export default function ProductIssueShow({
                             <Button variant="primary" onClick={handleRecheck} loading={rechecking}>
                                 Recheck Product
                             </Button>
-                            {/* <Link href={route('product.issues', query)}>
+                            <Link href={route('product.issues', query)}>
                                 <Button variant="plain">Back to Product Issues</Button>
-                            </Link> */}
+                            </Link>
                         </InlineStack>
                     </BlockStack>
                 </Card>

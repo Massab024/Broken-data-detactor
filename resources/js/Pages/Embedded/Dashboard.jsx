@@ -84,7 +84,7 @@ export default function Dashboard({
         { label: 'Healthy', value: healthy_products_count, tone: 'success' },
         { label: 'Warnings', value: warning_products_count, tone: 'warning' },
         { label: 'Critical', value: critical_products_count, tone: 'critical' },
-        { label: 'Needs Review', value: needs_review_products_count, tone: 'info' },
+        // { label: 'Needs Review', value: needs_review_products_count, tone: 'info' },
     ];
 
     const issueSeverityRows = Object.entries(issue_count_by_severity || {}).map(([key, value]) => (
@@ -108,7 +108,7 @@ export default function Dashboard({
     const hasProducts = Number(total_products_scanned) > 0;
 
     return (
-        <Page title="Broken Data Detector">
+        <Page >
             <BlockStack gap="500">
                 <Card sectioned>
                     <BlockStack gap="400">
@@ -128,9 +128,9 @@ export default function Dashboard({
                             <Button onClick={handleValidate} loading={isValidating}>
                                 Run Validation
                             </Button>
-                            <Link href={route('product.issues')}>
+                            {/* <Link href={route('product.issues')}>
                                 <Button variant="plain">View Product Issues</Button>
-                            </Link>
+                            </Link> */}
                         </InlineStack>
                     </BlockStack>
                 </Card>

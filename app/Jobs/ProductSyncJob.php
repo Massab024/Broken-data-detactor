@@ -38,7 +38,7 @@ class ProductSyncJob implements ShouldQueue
         $this->writeActivityLog(
             'product_sync_started',
             'info',
-            'Product sync started for user ID: ' . $this->userId,
+            'Product sync started',
             ['user_id' => $this->userId]
         );
 
@@ -46,20 +46,20 @@ class ProductSyncJob implements ShouldQueue
             $this->writeActivityLog(
                 'product_sync_completed',
                 'info',
-                'Product sync completed for user ID: ' . $this->userId,
+                'Product sync completed',
                 ['user_id' => $this->userId]
             );
 
-            $this->logInfo('Products Synced successfully from Shopify for user ID: ' . $this->userId);
+            $this->logInfo('Products Synced successfully from Shopify');
         } else {
             $this->writeActivityLog(
                 'product_sync_failed',
                 'error',
-                'Product sync failed for user ID: ' . $this->userId,
+                'Product sync failed',
                 ['user_id' => $this->userId]
             );
 
-            $this->logInfo('Products Synced failed from Shopify for user ID: ' . $this->userId);
+            $this->logInfo('Products Synced failed from Shopify');
         }
     }
 

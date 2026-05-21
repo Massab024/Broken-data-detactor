@@ -12,6 +12,8 @@ class ProductIssueController extends Controller
 {
     public function index(Request $request)
     {
+        $userId = $request->user()?->id;
+
         $filters = [
             'search' => trim((string) $request->query('search', '')),
             'severity' => (string) $request->query('severity', 'all'),
@@ -23,6 +25,7 @@ class ProductIssueController extends Controller
 
         $query = ProductIssue::query()
             ->with(['product:id,title,health_status,last_checked_at'])
+            ->whereHas('product', fn ($productQuery) => $productQuery->where('user_id', $userId))
             ->when($filters['search'] !== '', function ($builder) use ($filters) {
                 $builder->whereHas('product', function ($productQuery) use ($filters) {
                     $productQuery->where('title', 'like', '%' . $filters['search'] . '%');
@@ -87,6 +90,7 @@ class ProductIssueController extends Controller
         if (!empty($filters['issue_id'])) {
             $issue = ProductIssue::query()
                 ->with(['product:id,title,health_status,last_checked_at'])
+                ->whereHas('product', fn ($productQuery) => $productQuery->where('user_id', $userId))
                 ->find($filters['issue_id']);
 
             if ($issue) {
@@ -139,13 +143,14 @@ class ProductIssueController extends Controller
         ]);
     }
 
-    public function show(ProductIssue $productIssue)
+    public function show(Request $request, ProductIssue $productIssue)
     {
         $productIssue->loadMissing(['product.user', 'product.productVarients']);
 
         $product = $productIssue->product;
 
         abort_unless($product instanceof Product, 404);
+        abort_unless($product->user_id === $request->user()?->id, 404);
 
         $allIssues = ProductIssue::query()
             ->where('product_id', $product->id)

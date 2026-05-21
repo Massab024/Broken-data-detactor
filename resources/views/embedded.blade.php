@@ -17,7 +17,7 @@
     <ui-nav-menu>
         <a href="/" rel="home">Dashboard</a>
         <a href="/product-issues">Product Issues</a>
-        <a href="/validation-settings">Validation Settings</a>
+        {{-- <a href="/validation-settings">Validation Settings</a> --}}
         <a href="/logs">Logs</a>
     </ui-nav-menu>
 
