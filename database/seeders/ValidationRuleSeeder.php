@@ -45,6 +45,41 @@ class ValidationRuleSeeder extends Seeder
                 'severity' => 'medium',
                 'is_enabled' => false,
             ],
+            [
+                'rule_key' => 'missing_vendor',
+                'name' => 'Missing Vendor',
+                'description' => 'Product vendor is missing.',
+                'severity' => 'low',
+                'is_enabled' => true,
+            ],
+            [
+                'rule_key' => 'missing_product_type',
+                'name' => 'Missing Product Type',
+                'description' => 'Product type is missing.',
+                'severity' => 'low',
+                'is_enabled' => true,
+            ],
+            [
+                'rule_key' => 'missing_sku',
+                'name' => 'Missing SKU',
+                'description' => 'One or more product variants are missing SKU.',
+                'severity' => 'low',
+                'is_enabled' => true,
+            ],
+            [
+                'rule_key' => 'product_status_draft',
+                'name' => 'Product Status is Draft',
+                'description' => 'Product is currently in draft status and should be reviewed.',
+                'severity' => 'low',
+                'is_enabled' => true,
+            ],
+            [
+                'rule_key' => 'weak_handle',
+                'name' => 'Weak Handle',
+                'description' => 'Product handle is missing, too short, or not SEO-friendly.',
+                'severity' => 'low',
+                'is_enabled' => true,
+            ],
         ];
 
         foreach ($defaultRules as $rule) {

@@ -32,6 +32,24 @@ function healthTone(healthStatus) {
     return 'info';
 }
 
+const issueLabelMap = {
+    missing_vendor: 'Missing Vendor',
+    missing_product_type: 'Missing Product Type',
+    missing_sku: 'Missing SKU',
+    product_status_draft: 'Product Status is Draft',
+    weak_handle: 'Weak Handle',
+    missing_product_title: 'Missing Product Title',
+    invalid_product_price: 'Invalid Product Price',
+    product_has_no_variants: 'Product Has No Variants',
+    variant_missing_price: 'Variant Missing Price',
+    missing_product_image: 'Missing Product Image',
+};
+
+function formatIssueLabel(key) {
+    if (!key) return 'Unknown Issue';
+    return issueLabelMap[key] || key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 function DetailRow({ label, value }) {
     return (
         <InlineStack align="space-between" blockAlign="start">
@@ -124,9 +142,9 @@ export default function ProductIssueShow({
                                 <Badge tone={severityTone(product_issue.severity)}>{product_issue.severity}</Badge>
                                 <Badge tone={statusTone(product_issue.status)}>{product_issue.status}</Badge>
                             </InlineStack>
-                            <DetailRow label="Issue key" value={product_issue.issue_key} />
+                            <DetailRow label="Issue" value={formatIssueLabel(product_issue.issue_key)} />
                             <DetailRow label="Message" value={product_issue.message} />
-                            <DetailRow label="Suggested fix" value={validation_rule?.description || product_issue.metadata?.suggested_fix} />
+                            <DetailRow label="Suggested fix" value={product_issue.suggested_fix || validation_rule?.description} />
                             <DetailRow label="Detected at" value={product_issue.detected_at} />
                             <DetailRow label="Resolved at" value={product_issue.resolved_at} />
 
@@ -181,7 +199,7 @@ export default function ProductIssueShow({
                             >
                                 {open_issues.map((issue, index) => (
                                     <IndexTable.Row id={`open-issue-${issue.id}`} key={issue.id} position={index}>
-                                        <IndexTable.Cell>{issue.issue_key}</IndexTable.Cell>
+                                        <IndexTable.Cell>{formatIssueLabel(issue.issue_key)}</IndexTable.Cell>
                                         <IndexTable.Cell><Badge tone={severityTone(issue.severity)}>{issue.severity}</Badge></IndexTable.Cell>
                                         <IndexTable.Cell>{issue.message}</IndexTable.Cell>
                                         <IndexTable.Cell>{issue.detected_at}</IndexTable.Cell>
@@ -212,7 +230,7 @@ export default function ProductIssueShow({
                             >
                                 {resolved_issues.map((issue, index) => (
                                     <IndexTable.Row id={`resolved-issue-${issue.id}`} key={issue.id} position={index}>
-                                        <IndexTable.Cell>{issue.issue_key}</IndexTable.Cell>
+                                        <IndexTable.Cell>{formatIssueLabel(issue.issue_key)}</IndexTable.Cell>
                                         <IndexTable.Cell><Badge tone={severityTone(issue.severity)}>{issue.severity}</Badge></IndexTable.Cell>
                                         <IndexTable.Cell>{issue.message}</IndexTable.Cell>
                                         <IndexTable.Cell>{issue.resolved_at}</IndexTable.Cell>

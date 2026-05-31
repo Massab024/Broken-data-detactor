@@ -91,6 +91,7 @@ class ProductValidationService
     {
         return DB::transaction(function () use ($product, $userId, $rules) {
             $product->loadMissing('productVarients');
+            $previousHealthStatus = $product->health_status;
 
             $rules ??= $this->enabledRules();
             $openIssues = collect();
@@ -110,6 +111,27 @@ class ProductValidationService
                 'health_status' => $healthStatus,
                 'last_checked_at' => now(),
             ])->save();
+
+            $logUserId = $userId ?? $product->user_id;
+            if ($logUserId !== null && $previousHealthStatus !== $healthStatus && in_array($healthStatus, ['needs_review', 'healthy'], true)) {
+                $event = $healthStatus === 'needs_review' ? 'product_health_needs_review' : 'product_health_healthy';
+                $message = $healthStatus === 'needs_review'
+                    ? 'Product health status changed to needs review.'
+                    : 'Product health status changed to healthy.';
+
+                $this->writeActivityLog(
+                    $event,
+                    'info',
+                    $message,
+                    [
+                        'product_id' => $product->id,
+                        'shopify_product_id' => $product->shopify_product_id,
+                        'previous_health_status' => $previousHealthStatus,
+                        'current_health_status' => $healthStatus,
+                    ],
+                    (int) $logUserId
+                );
+            }
 
             return [
                 'product_id' => $product->id,
@@ -133,6 +155,7 @@ class ProductValidationService
     protected function evaluateRule(Product $product, ValidationRule $rule, ?int $userId = null): array
     {
         $result = $this->buildRuleResult($product, $rule);
+        $logUserId = $userId ?? $product->user_id;
         $openIssues = ProductIssue::query()
             ->where('product_id', $product->id)
             ->where('issue_key', $rule->rule_key)
@@ -145,27 +168,49 @@ class ProductValidationService
                     'product_id' => $product->id,
                     'shopify_product_id' => $product->shopify_product_id,
                     'issue_key' => $rule->rule_key,
+                    'issue_type' => 'validation',
                     'severity' => $rule->severity,
+                    'status' => 'open',
                     'message' => $result['message'],
+                    'suggested_fix' => $result['suggested_fix'],
+                    'detected_at' => now(),
                     'metadata' => [
                         'suggested_fix' => $result['suggested_fix'],
                         'rule_name' => $rule->name,
                     ],
                 ]);
 
-                $this->writeActivityLog(
-                    'product_issue_detected',
-                    'warning',
-                    'Issue detected',
-                    [
-                        'product_id' => $product->id,
-                        'shopify_product_id' => $product->shopify_product_id,
-                        'issue_key' => $rule->rule_key,
-                        'severity' => $rule->severity,
-                        'message' => $result['message'],
-                    ],
-                    $userId
-                );
+                if ($logUserId !== null) {
+                    $this->writeActivityLog(
+                        'product_issue_detected',
+                        'warning',
+                        'Issue detected',
+                        [
+                            'product_id' => $product->id,
+                            'shopify_product_id' => $product->shopify_product_id,
+                            'issue_key' => $rule->rule_key,
+                            'severity' => $rule->severity,
+                            'message' => $result['message'],
+                        ],
+                        (int) $logUserId
+                    );
+
+                    if (strtolower((string) $rule->severity) === 'low') {
+                        $this->writeActivityLog(
+                            'product_low_issue_detected',
+                            'info',
+                            'Low severity issue detected',
+                            [
+                                'product_id' => $product->id,
+                                'shopify_product_id' => $product->shopify_product_id,
+                                'issue_key' => $rule->rule_key,
+                                'severity' => $rule->severity,
+                                'message' => $result['message'],
+                            ],
+                            (int) $logUserId
+                        );
+                    }
+                }
 
                 Log::info('Issue created', [
                     'user_id' => $userId,
@@ -184,7 +229,9 @@ class ProductValidationService
             $openIssues->each(function (ProductIssue $issue) use ($rule, $result): void {
                 $issue->forceFill([
                     'severity' => $rule->severity,
+                    'status' => 'open',
                     'message' => $result['message'],
+                    'suggested_fix' => $result['suggested_fix'],
                     'metadata' => array_merge($issue->metadata ?? [], [
                         'suggested_fix' => $result['suggested_fix'],
                         'rule_name' => $rule->name,
@@ -200,23 +247,41 @@ class ProductValidationService
         }
 
         if ($openIssues->isNotEmpty()) {
-            $openIssues->each(function (ProductIssue $issue) use ($userId): void {
+            $openIssues->each(function (ProductIssue $issue) use ($rule, $logUserId): void {
                 $issue->forceFill([
+                    'status' => 'resolved',
                     'resolved_at' => now(),
                 ])->save();
 
-                $this->writeActivityLog(
-                    'product_issue_resolved',
-                    'info',
-                    'Issue resolved',
-                    [
-                        'product_id' => $issue->product_id,
-                        'shopify_product_id' => $issue->shopify_product_id,
-                        'issue_key' => $issue->issue_key,
-                        'severity' => $issue->severity,
-                    ],
-                    $userId
-                );
+                if ($logUserId !== null) {
+                    $this->writeActivityLog(
+                        'product_issue_resolved',
+                        'info',
+                        'Issue resolved',
+                        [
+                            'product_id' => $issue->product_id,
+                            'shopify_product_id' => $issue->shopify_product_id,
+                            'issue_key' => $issue->issue_key,
+                            'severity' => $issue->severity,
+                        ],
+                        (int) $logUserId
+                    );
+
+                    if (strtolower((string) $rule->severity) === 'low') {
+                        $this->writeActivityLog(
+                            'product_low_issue_resolved',
+                            'info',
+                            'Low severity issue resolved',
+                            [
+                                'product_id' => $issue->product_id,
+                                'shopify_product_id' => $issue->shopify_product_id,
+                                'issue_key' => $issue->issue_key,
+                                'severity' => $issue->severity,
+                            ],
+                            (int) $logUserId
+                        );
+                    }
+                }
 
                 Log::info('Issue resolved', [
                     'user_id' => $userId,
@@ -248,6 +313,11 @@ class ProductValidationService
             'product_has_no_variants' => $this->productHasNoVariants($product),
             'variant_missing_price' => $this->variantMissingPrice($product),
             'missing_product_image' => $this->missingProductImage($product),
+            'missing_vendor' => $this->missingVendor($product),
+            'missing_product_type' => $this->missingProductType($product),
+            'missing_sku' => $this->missingSku($product),
+            'product_status_draft' => $this->productStatusDraft($product),
+            'weak_handle' => $this->weakHandle($product),
             default => [
                 'triggered' => false,
                 'message' => null,
@@ -312,6 +382,73 @@ class ProductValidationService
             'message' => $triggered ? 'Product image is missing.' : null,
             'suggested_fix' => $triggered ? 'Add a product image in Shopify admin.' : null,
         ];
+    }
+
+    protected function missingVendor(Product $product): array
+    {
+        $triggered = $this->isBlank($product->vendor);
+
+        return [
+            'triggered' => $triggered,
+            'message' => $triggered ? 'Product vendor is missing.' : null,
+            'suggested_fix' => $triggered ? 'Add a vendor to this product in Shopify admin.' : null,
+        ];
+    }
+
+    protected function missingProductType(Product $product): array
+    {
+        $triggered = $this->isBlank($product->product_type);
+
+        return [
+            'triggered' => $triggered,
+            'message' => $triggered ? 'Product type is missing.' : null,
+            'suggested_fix' => $triggered ? 'Add a product type/category in Shopify admin.' : null,
+        ];
+    }
+
+    protected function missingSku(Product $product): array
+    {
+        $triggered = $product->productVarients->contains(function ($variant): bool {
+            return $this->isBlank($variant->sku);
+        });
+
+        return [
+            'triggered' => $triggered,
+            'message' => $triggered ? 'One or more variants are missing SKU.' : null,
+            'suggested_fix' => $triggered ? 'Add SKU values to all product variants in Shopify admin.' : null,
+        ];
+    }
+
+    protected function productStatusDraft(Product $product): array
+    {
+        $status = strtolower(trim((string) $product->status));
+        $triggered = $status === 'draft';
+
+        return [
+            'triggered' => $triggered,
+            'message' => $triggered ? 'Product is currently in draft status.' : null,
+            'suggested_fix' => $triggered ? 'Review the product and publish it when ready.' : null,
+        ];
+    }
+
+    protected function weakHandle(Product $product): array
+    {
+        $handle = trim((string) $product->handle);
+        $triggered = $handle === ''
+            || mb_strlen($handle) < 5
+            || preg_match('/\s/', $handle)
+            || preg_match('/[A-Z]/', $handle);
+
+        return [
+            'triggered' => $triggered,
+            'message' => $triggered ? 'Product handle needs review.' : null,
+            'suggested_fix' => $triggered ? 'Use a clean, lowercase, SEO-friendly product handle.' : null,
+        ];
+    }
+
+    protected function isBlank(mixed $value): bool
+    {
+        return trim((string) $value) === '';
     }
 
     protected function isValidPositivePrice(mixed $price): bool

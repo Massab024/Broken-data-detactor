@@ -68,7 +68,7 @@ class ProductIssueController extends Controller
                 'severity' => $issue->severity,
                 'message' => $issue->message,
                 'status' => $issue->resolved_at ? 'resolved' : 'open',
-                'detected_at' => optional($issue->created_at)?->toDateTimeString(),
+                'detected_at' => optional($issue->detected_at ?? $issue->created_at)?->toDateTimeString(),
                 'last_checked_at' => optional($issue->product?->last_checked_at)?->toDateTimeString(),
                 'resolved_at' => optional($issue->resolved_at)?->toDateTimeString(),
                 'metadata' => $issue->metadata,
@@ -106,7 +106,7 @@ class ProductIssueController extends Controller
                     'severity' => $issue->severity,
                     'message' => $issue->message,
                     'status' => $issue->resolved_at ? 'resolved' : 'open',
-                    'detected_at' => optional($issue->created_at)?->toDateTimeString(),
+                    'detected_at' => optional($issue->detected_at ?? $issue->created_at)?->toDateTimeString(),
                     'last_checked_at' => optional($issue->product?->last_checked_at)?->toDateTimeString(),
                     'resolved_at' => optional($issue->resolved_at)?->toDateTimeString(),
                     'metadata' => $issue->metadata,
@@ -195,8 +195,9 @@ class ProductIssueController extends Controller
             'severity' => $issue->severity,
             'message' => $issue->message,
             'status' => $issue->resolved_at ? 'resolved' : 'open',
-            'detected_at' => optional($issue->created_at)?->toDateTimeString(),
+            'detected_at' => optional($issue->detected_at ?? $issue->created_at)?->toDateTimeString(),
             'resolved_at' => optional($issue->resolved_at)?->toDateTimeString(),
+            'suggested_fix' => $issue->suggested_fix ?? ($issue->metadata['suggested_fix'] ?? null),
             'metadata' => $issue->metadata,
         ];
     }

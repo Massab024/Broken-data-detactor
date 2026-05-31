@@ -11,14 +11,19 @@ class ProductIssue extends Model
         'product_id',
         'shopify_product_id',
         'issue_key',
+        'issue_type',
         'severity',
+        'status',
         'message',
+        'suggested_fix',
+        'detected_at',
         'metadata',
         'resolved_at',
     ];
 
     protected $casts = [
         'metadata' => 'array',
+        'detected_at' => 'datetime',
         'resolved_at' => 'datetime',
     ];
 

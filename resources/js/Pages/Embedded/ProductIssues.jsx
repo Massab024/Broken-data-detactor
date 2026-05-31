@@ -35,6 +35,24 @@ function healthTone(healthStatus) {
     return 'info';
 }
 
+const issueLabelMap = {
+    missing_vendor: 'Missing Vendor',
+    missing_product_type: 'Missing Product Type',
+    missing_sku: 'Missing SKU',
+    product_status_draft: 'Product Status is Draft',
+    weak_handle: 'Weak Handle',
+    missing_product_title: 'Missing Product Title',
+    invalid_product_price: 'Invalid Product Price',
+    product_has_no_variants: 'Product Has No Variants',
+    variant_missing_price: 'Variant Missing Price',
+    missing_product_image: 'Missing Product Image',
+};
+
+function formatIssueLabel(key) {
+    if (!key) return 'Unknown Issue';
+    return issueLabelMap[key] || key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export default function ProductIssues({
     issues,
     filters,
@@ -194,6 +212,9 @@ export default function ProductIssues({
                                     {selected_issue.product.health_status}
                                 </Badge>
                             </InlineStack>
+                            <Text as="p" variant="bodySm" tone="subdued">
+                                {formatIssueLabel(selected_issue.issue_key)}
+                            </Text>
                             <Text as="p" tone="subdued">
                                 {selected_issue.message}
                             </Text>
@@ -235,7 +256,7 @@ export default function ProductIssues({
                                 {issues.data.map((issue, index) => (
                                     <IndexTable.Row id={`issue-${issue.id}`} key={issue.id} position={index}>
                                         <IndexTable.Cell>{issue.product.title}</IndexTable.Cell>
-                                        <IndexTable.Cell>{issue.issue_key}</IndexTable.Cell>
+                                        <IndexTable.Cell>{formatIssueLabel(issue.issue_key)}</IndexTable.Cell>
                                         <IndexTable.Cell>
                                             <Badge tone={severityTone(issue.severity)}>{issue.severity}</Badge>
                                         </IndexTable.Cell>

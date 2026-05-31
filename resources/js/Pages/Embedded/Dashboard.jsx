@@ -55,6 +55,7 @@ export default function Dashboard({
     recent_activity_logs,
     issue_count_by_severity,
     product_count_by_health_status,
+    needs_review_breakdown,
     enabled_validation_rules_count,
     disabled_validation_rules_count,
 }) {
@@ -84,8 +85,26 @@ export default function Dashboard({
         { label: 'Healthy', value: healthy_products_count, tone: 'success' },
         { label: 'Warnings', value: warning_products_count, tone: 'warning' },
         { label: 'Critical', value: critical_products_count, tone: 'critical' },
-        // { label: 'Needs Review', value: needs_review_products_count, tone: 'info' },
+        { label: 'Needs Review', value: needs_review_products_count, tone: 'info' },
     ];
+
+    const issueLabelMap = {
+        missing_vendor: 'Missing Vendor',
+        missing_product_type: 'Missing Product Type',
+        missing_sku: 'Missing SKU',
+        product_status_draft: 'Draft Products',
+        weak_handle: 'Weak Handle',
+        missing_product_title: 'Missing Product Title',
+        invalid_product_price: 'Invalid Product Price',
+        product_has_no_variants: 'Product Has No Variants',
+        variant_missing_price: 'Variant Missing Price',
+        missing_product_image: 'Missing Product Image',
+    };
+
+    const formatIssueLabel = (key) => {
+        if (!key) return 'Unknown Issue';
+        return issueLabelMap[key] || key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+    };
 
     const issueSeverityRows = Object.entries(issue_count_by_severity || {}).map(([key, value]) => (
         <InlineStack key={key} align="space-between">
@@ -102,6 +121,19 @@ export default function Dashboard({
                 {key.replace('_', ' ')}
             </Text>
             <Text as="span">{value}</Text>
+        </InlineStack>
+    ));
+
+    const needsReviewRows = [
+        { key: 'missing_vendor', label: 'Missing Vendor' },
+        { key: 'missing_product_type', label: 'Missing Product Type' },
+        { key: 'missing_sku', label: 'Missing SKU' },
+        { key: 'product_status_draft', label: 'Draft Products' },
+        { key: 'weak_handle', label: 'Weak Handle' },
+    ].map((item) => (
+        <InlineStack key={item.key} align="space-between">
+            <Text as="span" tone="subdued">{item.label}</Text>
+            <Text as="span">{Number(needs_review_breakdown?.[item.key] || 0)}</Text>
         </InlineStack>
     ));
 
@@ -221,6 +253,15 @@ export default function Dashboard({
                             {productHealthRows}
                         </BlockStack>
                     </Card>
+
+                    <Card sectioned>
+                        <BlockStack gap="300">
+                            <Text variant="headingMd" as="h2">
+                                Needs Review Breakdown
+                            </Text>
+                            {needsReviewRows}
+                        </BlockStack>
+                    </Card>
                 </Box>
 
                 <Card sectioned>
@@ -247,7 +288,7 @@ export default function Dashboard({
                                 {recently_detected_issues.map((issue, index) => (
                                     <IndexTable.Row id={`recent-issue-${issue.id}`} key={issue.id} position={index}>
                                         <IndexTable.Cell>{issue.product?.title}</IndexTable.Cell>
-                                        <IndexTable.Cell>{issue.issue_key}</IndexTable.Cell>
+                                            <IndexTable.Cell>{formatIssueLabel(issue.issue_key)}</IndexTable.Cell>
                                         <IndexTable.Cell>
                                             <Badge tone={severityTone(issue.severity)}>{issue.severity}</Badge>
                                         </IndexTable.Cell>

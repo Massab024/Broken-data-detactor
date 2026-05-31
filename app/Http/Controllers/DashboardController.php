@@ -70,6 +70,24 @@ class DashboardController extends Controller
             ->pluck('total', 'severity')
             ->all();
 
+        $needsReviewKeys = [
+            'missing_vendor',
+            'missing_product_type',
+            'missing_sku',
+            'product_status_draft',
+            'weak_handle',
+        ];
+
+        $needsReviewBreakdown = ProductIssue::query()
+            ->whereHas('product', fn ($productQuery) => $productQuery->when($userId !== null, fn ($builder) => $builder->where('user_id', $userId)))
+            ->open()
+            ->where('severity', 'low')
+            ->whereIn('issue_key', $needsReviewKeys)
+            ->select('issue_key', DB::raw('COUNT(*) as total'))
+            ->groupBy('issue_key')
+            ->pluck('total', 'issue_key')
+            ->all();
+
         $recentIssues = ProductIssue::query()
             ->with(['product:id,title,health_status,last_checked_at'])
             ->whereHas('product', fn ($productQuery) => $productQuery->when($userId !== null, fn ($builder) => $builder->where('user_id', $userId)))
@@ -85,7 +103,7 @@ class DashboardController extends Controller
                 'issue_key' => $issue->issue_key,
                 'severity' => $issue->severity,
                 'status' => $issue->resolved_at ? 'resolved' : 'open',
-                'detected_at' => optional($issue->created_at)?->toDateTimeString(),
+                'detected_at' => optional($issue->detected_at ?? $issue->created_at)?->toDateTimeString(),
                 'view_url' => route('product.issues.show', array_merge(['productIssue' => $issue->id], $query)),
             ])
             ->values();
@@ -121,6 +139,7 @@ class DashboardController extends Controller
             'recent_activity_logs' => $recentActivityLogs,
             'issue_count_by_severity' => $this->normalizeCounts($severityCounts, ['critical', 'high', 'medium', 'low']),
             'product_count_by_health_status' => $this->normalizeCounts($healthCounts, ['healthy', 'warning', 'critical', 'needs_review']),
+            'needs_review_breakdown' => $this->normalizeCounts($needsReviewBreakdown, $needsReviewKeys),
             'enabled_validation_rules_count' => ValidationRule::query()->where('is_enabled', true)->count(),
             'disabled_validation_rules_count' => ValidationRule::query()->where('is_enabled', false)->count(),
         ];
