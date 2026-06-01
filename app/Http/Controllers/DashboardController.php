@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 
 
@@ -37,8 +38,8 @@ class DashboardController extends Controller
 
     public function validateProducts(Request $request)
     {
-        $user = $request->user();
-
+        $user = auth()->user();
+        // dd($user->id);
         Log::info('Run Validation button clicked', [
             'user_id' => $user?->id,
             'shop' => $user?->name,

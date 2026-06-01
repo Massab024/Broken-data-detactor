@@ -284,7 +284,7 @@ class ProductValidationService
                 }
 
                 Log::info('Issue resolved', [
-                    'user_id' => $userId,
+                    'user_id' => $logUserId,
                     'product_id' => $issue->product_id,
                     'issue_id' => $issue->id,
                     'issue_key' => $issue->issue_key,

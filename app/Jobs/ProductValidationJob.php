@@ -22,6 +22,7 @@ class ProductValidationJob implements ShouldQueue
 
     public function handle(ProductValidationService $validationService): void
     {
+
         Log::info('ProductValidationJob started', [
             'user_id' => $this->userId,
         ]);
