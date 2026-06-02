@@ -34,7 +34,7 @@ return [
             'driver' => 'sync',
         ],
 
-        'redis' => [
+        'database' => [
             'driver' => 'database',
             'connection' => env('DB_QUEUE_CONNECTION'),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
@@ -63,7 +63,7 @@ return [
             'after_commit' => false,
         ],
 
-        'database' => [
+        'redis' => [
             'driver' => 'redis',
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
