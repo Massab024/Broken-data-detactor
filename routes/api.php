@@ -26,3 +26,4 @@ Route::post('/exercise-16-fraud-check', [ArtworkVersionController::class, 'fraud
 Route::post('/exercise-17-product-price-engine', [ArtworkVersionController::class, 'productPriceEngine']);
 Route::post('/exercise-18−data-sync', [ArtworkVersionController::class, 'dataSync']);
 Route::post('/exercise-19−variant-control ', [ArtworkVersionController::class, 'variantControl']);
+Route::post('/exercise-20−order-state', [ArtworkVersionController::class, 'orderState']);

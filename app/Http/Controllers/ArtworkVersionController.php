@@ -1516,5 +1516,81 @@ public function variantControl(Request $request)
 
     ], 200);
 }
+public function orderState(Request $request)
+{
+    if (!$request->input) {
+
+        return response()->json([
+
+            "success" => false,
+            "error" => true,
+            "message" => "Data is not correct check it",
+
+        ], 201);
+    }
+
+    $validator = validator($request->all(), [
+
+        'input' => 'required|array',
+
+        'input.transitions' => 'required|array|min:1',
+
+        'input.transitions.*' => 'required|string',
+
+    ]);
+
+    if ($validator->fails()) {
+
+        return response()->json([
+            'success' => false,
+            'message' => $validator->errors()->first()
+        ], 200);
+    }
+
+    $transitions = $request->input['transitions'];
+
+    $allowedFlow = [
+        'created',
+        'paid',
+        'processing',
+        'shipped',
+        'delivered'
+    ];
+
+    $isValid = true;
+
+    foreach ($transitions as $index => $state) {
+
+        if (!in_array($state, $allowedFlow)) {
+            $isValid = false;
+            break;
+        }
+
+        if ($index > 0) {
+
+            $previousState = $transitions[$index - 1];
+
+            $previousPosition = array_search($previousState, $allowedFlow);
+            $currentPosition = array_search($state, $allowedFlow);
+
+            if ($currentPosition != $previousPosition + 1) {
+                $isValid = false;
+                break;
+            }
+        }
+    }
+
+    return response()->json([
+
+        "success" => true,
+
+        "data" => [
+
+            "valid" => $isValid
+
+        ]
+
+    ], 200);
+}
 
 }
