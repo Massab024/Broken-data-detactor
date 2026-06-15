@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            // $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->unsignedBigInteger('shopify_product_id')->nullable();
             $table->text('body_html')->nullable();
             $table->string('handle')->nullable();

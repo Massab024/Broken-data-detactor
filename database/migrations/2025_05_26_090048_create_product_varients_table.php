@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('product_varients', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained()->onDelete('cascade');
+            // $table->foreignId('product_id')->constrained()->onDelete('cascade');
+            $table->unsignedBigInteger('product_id')->nullable();
             $table->unsignedBigInteger('shopify_product_varient_id')->nullable();
             $table->unsignedBigInteger('shopify_inventory_item_id')->nullable();
             $table->double('compare_at_price')->nullable();
