@@ -20,7 +20,11 @@ use Illuminate\Support\Facades\Auth;
 class DashboardController extends Controller
 {
     public function index(Request $request)
-    {
+        {
+        $check = Product::where('user_id', $request->user()?->id)->first();
+        if (empty($check)) {
+            ProductSyncJob::dispatch($request->user()?->id);
+        }
         return $this->render('Dashboard', $this->dashboardData($request->user()?->id, $request->query()));
     }
 
